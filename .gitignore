@@ -84,3 +84,6 @@ local.properties
 .gradle
 */build/
 */.cxx/
+
+
+OpenCV-android-sdk/
