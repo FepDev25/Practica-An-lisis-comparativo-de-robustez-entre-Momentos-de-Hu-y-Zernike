@@ -1,6 +1,3 @@
-
-
-
 # Guía de Práctica de Laboratorio
 
 ## Visión por Computador
@@ -162,7 +159,7 @@ Usar JNI para Android o Wrapper para iOS.
 
 El contorno se representa como una señal compleja:
 
-```
+```bash
 s(n) = (x(n) - xc) + j(y(n) - yc)
 ```
 
@@ -260,4 +257,3 @@ Ing. Vladimir Robles Bykbaev
 **Firma:**
 
 ---
-
