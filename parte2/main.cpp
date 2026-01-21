@@ -28,8 +28,8 @@ using namespace std;
 
 const int NUM_POINTS = 1024;        // Interpolación a 1024 puntos
 const int NUM_HARMONICS = 15;       // Número de armónicos para el descriptor
-const string TRAIN_DIR = "../data/training/";  // Corpus de entrenamiento
-const string TEST_DIR = "../data/testing/";    // Imágenes de prueba
+const string TRAIN_DIR = "data/training/";  // Corpus de entrenamiento
+const string TEST_DIR = "data/testing/";    // Imágenes de prueba
 
 // ESTRUCTURA: Descriptor de Forma
 
@@ -571,7 +571,7 @@ void generateTrainingCorpus() {
         }
     }
     
-    saveCorpus(corpus, "../data/corpus.csv");
+    saveCorpus(corpus, "data/corpus.csv");
     
     cout << "\n CORPUS GENERADO: " << corpus.size() << " ejemplos" << endl;
 }
@@ -582,7 +582,7 @@ void evaluateTestSet() {
     cout << "\n EVALUANDO DATASET DE PRUEBA..." << endl;
     
     // Cargar corpus
-    auto corpus = loadCorpus("../data/corpus.csv");
+    auto corpus = loadCorpus("data/corpus.csv");
     if (corpus.empty()) {
         cerr << " No se pudo cargar el corpus" << endl;
         return;
@@ -684,7 +684,7 @@ int main(int argc, char** argv) {
             return -1;
         }
         
-        auto corpus = loadCorpus("../data/corpus.csv");
+        auto corpus = loadCorpus("data/corpus.csv");
         auto desc = extractShapeDescriptor(img, "", imgPath);
         
         if (!desc.features.empty()) {
