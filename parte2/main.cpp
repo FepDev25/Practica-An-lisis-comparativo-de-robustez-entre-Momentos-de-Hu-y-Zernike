@@ -1,16 +1,14 @@
 /**
  * PRÁCTICA 3-2: Shape Signature con FFT de Coordenadas Complejas
  * 
- * Pipeline según anotaciones del profesor:
+ * Nuestro pipeline:
  * 1. SACAR EL CONTORNO (findContours)
- * 2. INTERPOLACIÓN LINEAL a 1024 puntos (NO 64)
- * 3. CALCULAR coordenadas complejas z = (x-xc) + j(y-yc)
- * 4. SACAR LA TRANSFORMADA DE FOURIER → Esta es la FIRMA
- * 5. NORMALIZAR por |F(1)| (F(0) = energía, NO se usa para comparar)
+ * 2. INTERPOLACIÓN LINEAL a 1024 puntos
+ * 3. CALCULAR coordenadas complejas
+ * 4. SACAR LA TRANSFORMADA DE FOURIER (FIRMA)
+ * 5. NORMALIZAR 
  * 6. COMPARAR con distancia euclídea → menor distancia = más parecido
  * 
- * Autores: [Tu nombre] & [Compañero]
- * Fecha: Enero 2026
  */
 
 #include <opencv2/opencv.hpp>
@@ -28,15 +26,15 @@ using namespace std;
 
 const int NUM_POINTS = 1024;        // Interpolación a 1024 puntos
 const int NUM_HARMONICS = 15;       // Número de armónicos para el descriptor
-const string TRAIN_DIR = "../data/training/";  // Corpus de entrenamiento
-const string TEST_DIR = "../data/testing/";    // Imágenes de prueba
+const string TRAIN_DIR = "data/training/";  // Corpus de entrenamiento
+const string TEST_DIR = "data/testing/";    // Imágenes de prueba
 
 // ESTRUCTURA: Descriptor de Forma
 
 struct ShapeDescriptor {
-    vector<float> features;    // Magnitudes normalizadas de FFT
-    string label;              // "circle", "triangle", "square"
-    string filename;           // Nombre del archivo de origen
+    vector<float> features;    
+    string label;              
+    string filename;           
     
     ShapeDescriptor() {}
     ShapeDescriptor(const vector<float>& f, const string& l, const string& fn = "") 
@@ -49,35 +47,30 @@ struct ShapeDescriptor {
  * Preprocesa la imagen y extrae el contorno principal.
  * 
  * Pipeline:
- * - Convertir a escala de grises (si es necesario)
- * - Binarización con umbral adaptativo (robusto a iluminación variable)
- * - Aplicar operaciones morfológicas para limpiar ruido
+ * - Convertir a escala de grises 
+ * - Binarización con umbral adaptativo 
+ * - operaciones morfológicas para 
  * - Extraer contornos con findContours
- * - Seleccionar el contorno más grande (la figura principal)
- * 
- * @param image Imagen de entrada (puede ser color o gris)
- * @param contour Contorno extraído (output)
- * @return true si se encontró un contorno válido
+ * - Seleccionar el contorno más grande
  */
 bool extractContour(const Mat& image, vector<Point>& contour) {
     Mat gray, binary;
     
-    // Convertir a escala de grises si es necesario
+    
     if (image.channels() == 3) {
         cvtColor(image, gray, COLOR_BGR2GRAY);
     } else {
         gray = image.clone();
     }
     
-    // Binarización adaptativa (mejor que umbral fijo)
-    // Se adapta a variaciones locales de iluminación
+
     adaptiveThreshold(gray, binary, 255, ADAPTIVE_THRESH_GAUSSIAN_C, 
                       THRESH_BINARY_INV, 11, 2);
     
     // Operaciones morfológicas para limpiar ruido
     Mat kernel = getStructuringElement(MORPH_ELLIPSE, Size(3, 3));
-    morphologyEx(binary, binary, MORPH_CLOSE, kernel);  // Cerrar huecos pequeños
-    morphologyEx(binary, binary, MORPH_OPEN, kernel);   // Eliminar ruido puntual
+    morphologyEx(binary, binary, MORPH_CLOSE, kernel);  
+    morphologyEx(binary, binary, MORPH_OPEN, kernel);   
     
     // Extraer todos los contornos
     vector<vector<Point>> contours;
@@ -101,7 +94,7 @@ bool extractContour(const Mat& image, vector<Point>& contour) {
     
     contour = contours[maxIdx];
     
-    // Validación: área mínima
+    
     if (maxArea < 100) {
         cerr << " Contorno muy pequeño (área < 100 píxeles)" << endl;
         return false;
@@ -117,19 +110,7 @@ bool extractContour(const Mat& image, vector<Point>& contour) {
 
 /**
  * Interpola el contorno a exactamente NUM_POINTS puntos.
- * 
- * ¿Por qué interpolar?
- * - FFT requiere señales de longitud fija para comparar
  * - 1024 puntos captura suficientes detalles de la forma
- * - Potencia de 2 → FFT más eficiente
- * 
- * Método:
- * - Calcular longitud total del contorno (perímetro)
- * - Distribuir NUM_POINTS uniformemente a lo largo del contorno
- * - Interpolar linealmente entre puntos originales
- * 
- * @param contour Contorno original (tamaño variable)
- * @return Contorno interpolado (exactamente NUM_POINTS puntos)
  */
 vector<Point2f> interpolateContour(const vector<Point>& contour) {
     int n = contour.size();
@@ -152,20 +133,20 @@ vector<Point2f> interpolateContour(const vector<Point>& contour) {
     
     float totalLength = cumulativeLength[n-1];
     
-    // Interpolar NUM_POINTS uniformemente distribuidos
+    
     vector<Point2f> interpolated(NUM_POINTS);
     
     for (int i = 0; i < NUM_POINTS; i++) {
         // Posición objetivo en el contorno
         float targetLength = (totalLength * i) / NUM_POINTS;
         
-        // Buscar el segmento que contiene esta posición
+        
         int idx = 0;
         while (idx < n-1 && cumulativeLength[idx+1] < targetLength) {
             idx++;
         }
         
-        // Interpolar linealmente entre contour[idx] y contour[idx+1]
+        // Interpolar linealmente
         if (idx < n-1) {
             float segmentLength = cumulativeLength[idx+1] - cumulativeLength[idx];
             float t = (targetLength - cumulativeLength[idx]) / segmentLength;
@@ -187,17 +168,6 @@ vector<Point2f> interpolateContour(const vector<Point>& contour) {
 
 /**
  * Calcula el centroide (centro de masa) del contorno.
- * 
- * Fórmula:
- *   xc = (1/N) * Σ x(i)
- *   yc = (1/N) * Σ y(i)
- * 
- * El centroide se usa para centrar la señal compleja, logrando:
- * - Invarianza a traslación
- * - El componente DC (F[0]) representa solo la energía
- * 
- * @param contour Contorno de entrada
- * @return Centroide (xc, yc)
  */
 Point2f calculateCentroid(const vector<Point2f>& contour) {
     float sumX = 0, sumY = 0;
@@ -219,38 +189,15 @@ Point2f calculateCentroid(const vector<Point2f>& contour) {
 
 /**
  * Construye la señal compleja centrada en el centroide.
- * 
- * IMPORTANTE (según el profesor):
- * - SI O SI se debe usar el método de COORDENADAS COMPLEJAS
- * - NO usar distancia r(n) (método del ejercicio preparatorio)
- * 
- * Fórmula:
- *   s(n) = (x(n) - xc) + j*(y(n) - yc)
- * 
- * Donde:
- * - (x(n), y(n)) son las coordenadas del punto n
- * - (xc, yc) es el centroide
- * - j es la unidad imaginaria
- * 
- * Esta representación:
- * - Preserva toda la información espacial 2D
- * - La parte real = desplazamiento horizontal
- * - La parte imaginaria = desplazamiento vertical
- * 
- * @param contour Contorno interpolado
- * @param centroid Centroide del contorno
- * @return Señal compleja en formato OpenCV (Mat con 2 canales: real, imag)
  */
 Mat buildComplexSignal(const vector<Point2f>& contour, const Point2f& centroid) {
     int n = contour.size();
     
-    // OpenCV representa números complejos como Mat de 2 canales
-    // Canal 0 = parte real, Canal 1 = parte imaginaria
     Mat complexSignal(n, 1, CV_32FC2);
     
     for (int i = 0; i < n; i++) {
-        float real = contour[i].x - centroid.x;  // x - xc
-        float imag = contour[i].y - centroid.y;  // y - yc
+        float real = contour[i].x - centroid.x;  
+        float imag = contour[i].y - centroid.y;
         
         complexSignal.at<Vec2f>(i, 0) = Vec2f(real, imag);
     }
@@ -263,34 +210,21 @@ Mat buildComplexSignal(const vector<Point2f>& contour, const Point2f& centroid) 
 // PASO 5: TRANSFORMADA DE FOURIER (FFT)
 
 /**
- * Aplica la Transformada Discreta de Fourier (DFT/FFT).
- * 
- * ESTA ES LA FIRMA DE LA FIGURA
- * 
- * La FFT descompone la señal en componentes de frecuencia:
- * - F[0] = componente DC (energía total, NO se usa para comparar)
- * - F[1] = primer armónico (fundamental, se usa para normalizar)
- * - F[2], F[3], ... = armónicos superiores (detalles de la forma)
-
- * @param complexSignal Señal compleja de entrada
- * @param magnitudes Magnitudes de los coeficientes de Fourier (output)
+ * Aplica la Transformada Discreta de Fourier, es la firma de la figura
  */
 void computeFFT(const Mat& complexSignal, vector<float>& magnitudes) {
     Mat dftOutput;
     
-    // Aplicar DFT (Discrete Fourier Transform)
-    // DFT_COMPLEX_OUTPUT: salida en formato complejo (2 canales)
+    
     dft(complexSignal, dftOutput, DFT_COMPLEX_OUTPUT);
     
-    // Separar parte real e imaginaria
     vector<Mat> planes(2);
-    split(dftOutput, planes); // planes[0] = real, planes[1] = imag
+    split(dftOutput, planes); 
     
     // Calcular magnitudes
     Mat mag;
     magnitude(planes[0], planes[1], mag);
     
-    // Convertir a vector para facilitar manipulación
     magnitudes.clear();
     for (int i = 0; i < mag.rows; i++) {
         magnitudes.push_back(mag.at<float>(i, 0));
@@ -299,21 +233,14 @@ void computeFFT(const Mat& complexSignal, vector<float>& magnitudes) {
     cout << "✓ FFT calculada: " << magnitudes.size() << " coeficientes" << endl;
 }
 
-// PASO 6: NORMALIZACIÓN (INVARIANZA A ESCALA)
+// PASO 6: NORMALIZACIÓN 
 
 /**
- * Normaliza los coeficientes de Fourier para invarianza a escala.
+ * Normalizamos los coeficientes de Fourier para invarianza a escala.
 
  * - El primer componente F[0] es solo ENERGÍA DE LA SEÑAL
- * - Se usa para LOCALIZAR los demás coeficientes
- * 
- * Resultado:
- * - F'[1] = 1.0 siempre (normalizado)
- * - F'[2], F'[3], ... son relativos al fundamental
- * - Invariante a escala (figuras grandes/pequeñas tienen mismo descriptor)
- * 
- * @param magnitudes Magnitudes de FFT sin normalizar
- * @return Vector de características normalizado (NUM_HARMONICS valores)
+ * - lo usamos para LOCALIZAR los demás coeficientes
+
  */
 vector<float> normalizeDescriptor(const vector<float>& magnitudes) {
     if (magnitudes.size() < 2) {
@@ -321,10 +248,9 @@ vector<float> normalizeDescriptor(const vector<float>& magnitudes) {
         return vector<float>(NUM_HARMONICS, 0.0f);
     }
     
-    // F[0] = componente DC (energía)
+    
     float dc = magnitudes[0];
     
-    // F[1] = primer armónico (fundamental), usado para normalizar
     float fundamental = magnitudes[1];
     
     if (fundamental < 1e-5) {
@@ -332,16 +258,13 @@ vector<float> normalizeDescriptor(const vector<float>& magnitudes) {
         return vector<float>(NUM_HARMONICS, 0.0f);
     }
     
-    // Construir descriptor normalizado
     vector<float> descriptor;
     
-    // Empezamos desde k=1 (saltamos F[0] = energía)
     for (int k = 1; k <= NUM_HARMONICS && k < magnitudes.size(); k++) {
         float normalized = magnitudes[k] / fundamental;
         descriptor.push_back(normalized);
     }
     
-    // Rellenar con ceros si no hay suficientes armónicos
     while (descriptor.size() < NUM_HARMONICS) {
         descriptor.push_back(0.0f);
     }
@@ -352,23 +275,18 @@ vector<float> normalizeDescriptor(const vector<float>& magnitudes) {
     return descriptor;
 }
 
-// FUNCIÓN PRINCIPAL: EXTRAER DESCRIPTOR COMPLETO
+// F. PRINCIPAL: EXTRAER DESCRIPTOR COMPLETO
 
 /**
- * Pipeline completo de extracción de Shape Signature.
+ * Pipeline completo
  * 
  * Pasos:
  * 1. Sacar el contorno
  * 2. Interpolar a 1024 puntos
  * 3. Calcular centroide
- * 4. Construir señal compleja z = (x-xc) + j(y-yc)
+ * 4. Construir señal compleja
  * 5. Aplicar FFT → FIRMA
  * 6. Normalizar por |F[1]|
- * 
- * @param image Imagen de entrada
- * @param label Etiqueta de la clase (opcional)
- * @param filename Nombre del archivo (opcional)
- * @return Descriptor de forma
  */
 ShapeDescriptor extractShapeDescriptor(const Mat& image, 
                                        const string& label = "", 
@@ -411,17 +329,13 @@ ShapeDescriptor extractShapeDescriptor(const Mat& image,
 
 /**
  * Calcula la distancia euclídea entre dos descriptores.
- * - Mientras más parecidas sean las formas, MÁS PEQUEÑO el valor de la distancia
- * 
-
- * @param d1 Primer descriptor
- * @param d2 Segundo descriptor
- * @return Distancia euclídea (0 = idénticos, mayor = más diferentes)
+ * tenemos en cuenta que mientras más parecidas sean las formas, MÁS PEQUEÑO el valor de la distancia
+ 
  */
 float euclideanDistance(const vector<float>& d1, const vector<float>& d2) {
     if (d1.size() != d2.size()) {
         cerr << "Descriptores de diferente tamaño" << endl;
-        return 1e9;  // Distancia infinita
+        return 1e9;  
     }
     
     float sum = 0.0f;
@@ -437,13 +351,11 @@ float euclideanDistance(const vector<float>& d1, const vector<float>& d2) {
  * Clasifica una imagen comparándola con el corpus de entrenamiento.
  * 
  * Método:
- * - Calcular distancia a TODOS los ejemplos del corpus
- * - Seleccionar el más cercano (distancia mínima)
- * - Retornar su etiqueta
+ * - Calculamos la distancia a TODOS los ejemplos del corpus
+ * - Seleccionar el más cercano, la dist. minima
+ * - Retornamos su etiqueta
  * 
- * @param testDescriptor Descriptor de la imagen de prueba
- * @param trainingSet Corpus de entrenamiento
- * @return Etiqueta predicha y distancia mínima
+
  */
 pair<string, float> classify(const ShapeDescriptor& testDescriptor, 
                              const vector<ShapeDescriptor>& trainingSet) {
@@ -477,7 +389,6 @@ void saveCorpus(const vector<ShapeDescriptor>& corpus, const string& filename) {
         return;
     }
     
-    // Formato: label,feature1,feature2,...,featureN
     for (const auto& desc : corpus) {
         file << desc.label;
         for (float f : desc.features) {
@@ -526,19 +437,7 @@ vector<ShapeDescriptor> loadCorpus(const string& filename) {
 
 // FUNCIÓN PRINCIPAL: GENERAR CORPUS DE ENTRENAMIENTO
 
-/**
- * Genera el corpus de entrenamiento procesando todas las imágenes en train_dir.
- * 
- * Estructura esperada:
- * data/training/
- *   ├── circle/
- *   │   ├── circle_1.png
- *   │   └── circle_2.png
- *   ├── triangle/
- *   │   └── triangle_1.png
- *   └── square/
- *       └── square_1.png
- */
+//Genera el corpus de entrenamiento procesando todas las imágenes en train_dir.
 void generateTrainingCorpus() {
     cout << "\n GENERANDO CORPUS DE ENTRENAMIENTO..." << endl;
     
@@ -571,7 +470,7 @@ void generateTrainingCorpus() {
         }
     }
     
-    saveCorpus(corpus, "../data/corpus.csv");
+    saveCorpus(corpus, "data/corpus.csv");
     
     cout << "\n CORPUS GENERADO: " << corpus.size() << " ejemplos" << endl;
 }
@@ -582,7 +481,7 @@ void evaluateTestSet() {
     cout << "\n EVALUANDO DATASET DE PRUEBA..." << endl;
     
     // Cargar corpus
-    auto corpus = loadCorpus("../data/corpus.csv");
+    auto corpus = loadCorpus("data/corpus.csv");
     if (corpus.empty()) {
         cerr << " No se pudo cargar el corpus" << endl;
         return;
@@ -684,7 +583,7 @@ int main(int argc, char** argv) {
             return -1;
         }
         
-        auto corpus = loadCorpus("../data/corpus.csv");
+        auto corpus = loadCorpus("data/corpus.csv");
         auto desc = extractShapeDescriptor(img, "", imgPath);
         
         if (!desc.features.empty()) {
