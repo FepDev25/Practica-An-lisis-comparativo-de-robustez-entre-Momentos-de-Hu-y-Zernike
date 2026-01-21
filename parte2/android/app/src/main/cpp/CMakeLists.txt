@@ -35,3 +35,18 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
         # List libraries link to the target library
         android
         log)
+
+find_library(
+        log-lib
+        log)
+
+# 1. AGREGAMOS ESTO: Busca la librería de gráficos nativa de Android
+find_library(
+        graphics-lib
+        jnigraphics)
+
+target_link_libraries(
+        android_app
+        ${log-lib}
+        ${graphics-lib} # 2. La enlazamos aquí
+)

@@ -1,8 +1,8 @@
 package com.example.android_app
 
+import android.graphics.Bitmap
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.widget.TextView
 import com.example.android_app.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
@@ -15,18 +15,28 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Example of a call to a native method
-        binding.sampleText.text = stringFromJNI()
-    }
+        // Configurar botón Borrar
+        binding.btnClear.setOnClickListener {
+            binding.drawingView.clearCanvas()
+            binding.tvResult.text = "Lienzo limpio"
+        }
 
-    /**
-     * A native method that is implemented by the 'android_app' native library,
-     * which is packaged with this application.
-     */
-    external fun stringFromJNI(): String
+        // Configurar botón Clasificar
+        binding.btnClassify.setOnClickListener {
+            val bitmap = binding.drawingView.getBitmap()
+            if (bitmap != null) {
+                // 2. LLAMAMOS A C++ AQUÍ
+                val result = classifyImage(bitmap)
+                binding.tvResult.text = "Resultado: $result"
+            } else {
+                binding.tvResult.text = "Error: Lienzo vacío"
+            }
+        }
+
+    }
+    external fun classifyImage(bitmap: Bitmap): String
 
     companion object {
-        // Used to load the 'android_app' library on application startup.
         init {
             System.loadLibrary("android_app")
         }
