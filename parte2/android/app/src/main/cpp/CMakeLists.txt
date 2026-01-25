@@ -11,6 +11,11 @@ cmake_minimum_required(VERSION 3.22.1)
 # build script scope).
 project("android_app")
 
+# Configurar OpenCV
+set(OpenCV_DIR ${CMAKE_SOURCE_DIR}/../../../../opencv-sdk/native/jni)
+find_package(OpenCV REQUIRED)
+include_directories(${OpenCV_INCLUDE_DIRS})
+
 # Creates and names a library, sets it as either STATIC
 # or SHARED, and provides the relative paths to its source code.
 # You can define multiple libraries, and CMake builds them for you.
@@ -48,5 +53,6 @@ find_library(
 target_link_libraries(
         android_app
         ${log-lib}
-        ${graphics-lib} # 2. La enlazamos aquí
+        ${graphics-lib}
+        ${OpenCV_LIBS}
 )
