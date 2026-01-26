@@ -23,20 +23,17 @@ using namespace std;
 const int NUM_POINTS = 1024;
 const int NUM_HARMONICS = 15;
 
-<<<<<<< HEAD
-// logica matematica
+struct ShapeDescriptor {
+    vector<float> features;
+    string label;
+    
+    ShapeDescriptor() {}
+    ShapeDescriptor(const vector<float>& f, const string& l) : features(f), label(l) {}
+};
 
-vector<Point2f> interpolateContour(const vector<Point>& contour) {
-    int n = contour.size();
-    if (n < 3) return vector<Point2f>();
-
-    vector<float> cumulativeLength(n);
-    cumulativeLength[0] = 0.0f;
-    for (int i = 1; i < n; i++) {
-        float dx = contour[i].x - contour[i-1].x;
-        float dy = contour[i].y - contour[i-1].y;
-        cumulativeLength[i] = cumulativeLength[i-1] + sqrt(dx*dx + dy*dy);
-    }
+// Extrae el contorno de la imagen
+bool extractContour(const Mat& image, vector<Point>& contour) {
+    Mat gray, binary;
     
     if (image.channels() == 3 || image.channels() == 4) {
         cvtColor(image, gray, COLOR_BGR2GRAY);
@@ -80,8 +77,7 @@ vector<Point2f> interpolateContour(const vector<Point>& contour) {
     return true;
 }
 
-// interpolacion lineal a 1024 puntos
-
+// Interpolacion lineal a 1024 puntos
 vector<Point2f> interpolateContour(const vector<Point>& contour) {
     int n = contour.size();
     
@@ -115,7 +111,6 @@ vector<Point2f> interpolateContour(const vector<Point>& contour) {
             float segmentLength = cumulativeLength[idx+1] - cumulativeLength[idx];
             float t = (targetLength - cumulativeLength[idx]) / segmentLength;
             
->>>>>>> c89b9f39f967c6e7ce3c1945fc2c7bb9c3374d56
             interpolated[i].x = (1-t) * contour[idx].x + t * contour[idx+1].x;
             interpolated[i].y = (1-t) * contour[idx].y + t * contour[idx+1].y;
         } else {
