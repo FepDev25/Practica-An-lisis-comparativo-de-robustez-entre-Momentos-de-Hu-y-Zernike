@@ -1,5 +1,6 @@
 package com.example.android_app
 
+import android.content.res.AssetManager
 import android.graphics.Bitmap
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -25,8 +26,8 @@ class MainActivity : AppCompatActivity() {
         binding.btnClassify.setOnClickListener {
             val bitmap = binding.drawingView.getBitmap()
             if (bitmap != null) {
-                // 2. LLAMAMOS A C++ AQUÍ
-                val result = classifyImage(bitmap)
+                // Llamar a JNI con AssetManager
+                val result = classifyImage(bitmap, assets)
                 binding.tvResult.text = "Resultado: $result"
             } else {
                 binding.tvResult.text = "Error: Lienzo vacío"
@@ -34,7 +35,8 @@ class MainActivity : AppCompatActivity() {
         }
 
     }
-    external fun classifyImage(bitmap: Bitmap): String
+    
+    external fun classifyImage(bitmap: Bitmap, assetManager: AssetManager): String
 
     companion object {
         init {
