@@ -24,9 +24,7 @@ const int NUM_POINTS = 1024;
 const int NUM_HARMONICS = 15;
 
 <<<<<<< HEAD
-// ============================================================================
-// BLOQUE 1: LÓGICA MATEMÁTICA (Shape Signature)
-// ============================================================================
+// logica matematica
 
 vector<Point2f> interpolateContour(const vector<Point>& contour) {
     int n = contour.size();
@@ -82,7 +80,7 @@ vector<Point2f> interpolateContour(const vector<Point>& contour) {
     return true;
 }
 
-// PASO 2: INTERPOLACIÓN LINEAL A 1024 PUNTOS
+// interpolacion lineal a 1024 puntos
 
 vector<Point2f> interpolateContour(const vector<Point>& contour) {
     int n = contour.size();
@@ -129,7 +127,7 @@ vector<Point2f> interpolateContour(const vector<Point>& contour) {
     return interpolated;
 }
 
-// PASO 3: CALCULAR CENTROIDE
+//calcular centroide
 
 Point2f calculateCentroid(const vector<Point2f>& contour) {
     float sumX = 0, sumY = 0;
@@ -145,7 +143,7 @@ Point2f calculateCentroid(const vector<Point2f>& contour) {
     return centroid;
 }
 
-// PASO 4: CONSTRUIR SEÑAL COMPLEJA
+// construir señal compleja
 
 Mat buildComplexSignal(const vector<Point2f>& contour, const Point2f& centroid) {
     int n = contour.size();
@@ -161,7 +159,7 @@ Mat buildComplexSignal(const vector<Point2f>& contour, const Point2f& centroid) 
     return complexSignal;
 }
 
-// PASO 5: FFT
+// fft
 
 void computeFFT(const Mat& complexSignal, vector<float>& magnitudes) {
     Mat dftOutput;
@@ -181,7 +179,7 @@ void computeFFT(const Mat& complexSignal, vector<float>& magnitudes) {
     LOGI("FFT calculada: %zu coeficientes", magnitudes.size());
 }
 
-// PASO 6: NORMALIZACIÓN
+// normalizar descriptor
 
 vector<float> normalizeDescriptor(const vector<float>& magnitudes) {
     if (magnitudes.size() < 2) {
@@ -211,7 +209,7 @@ vector<float> normalizeDescriptor(const vector<float>& magnitudes) {
     return descriptor;
 }
 
-// PIPELINE COMPLETO: EXTRAER DESCRIPTOR
+// pipeline completo: extraer descriptor
 
 ShapeDescriptor extractShapeDescriptor(const Mat& image) {
     LOGI("========================================");
@@ -240,7 +238,7 @@ ShapeDescriptor extractShapeDescriptor(const Mat& image) {
     return ShapeDescriptor(descriptor, "");
 }
 
-// CLASIFICACIÓN: DISTANCIA EUCLÍDEA
+// clasificación: distancia euclidiana
 
 float euclideanDistance(const vector<float>& d1, const vector<float>& d2) {
     if (d1.size() != d2.size()) {
@@ -280,7 +278,7 @@ pair<string, float> classify(const ShapeDescriptor& testDescriptor,
     return {bestLabel, minDistance};
 }
 
-// CARGAR CORPUS DESDE ASSETS
+// cargar corpus desde assets
 
 vector<ShapeDescriptor> loadCorpusFromAssets(AAssetManager* assetManager) {
     vector<ShapeDescriptor> corpus;
@@ -317,7 +315,7 @@ vector<ShapeDescriptor> loadCorpusFromAssets(AAssetManager* assetManager) {
     return corpus;
 }
 
-// CONVERSIÓN: Android Bitmap → OpenCV Mat
+// conversión: Android Bitmap → OpenCV Mat
 
 Mat bitmapToMat(JNIEnv* env, jobject bitmap) {
     AndroidBitmapInfo info;
@@ -335,7 +333,7 @@ Mat bitmapToMat(JNIEnv* env, jobject bitmap) {
     return result;
 }
 
-// TRADUCCIÓN A ESPAÑOL
+// traducción a español
 
 string translateToSpanish(const string& label) {
     if (label == "circle") return "Círculo";
@@ -344,8 +342,7 @@ string translateToSpanish(const string& label) {
     return label;
 }
 
-// JNI: FUNCIÓN DE CLASIFICACIÓN
-
+// jni: función de clasificación
 extern "C" JNIEXPORT jstring JNICALL
 Java_com_example_android_1app_MainActivity_classifyImage(
         JNIEnv* env,

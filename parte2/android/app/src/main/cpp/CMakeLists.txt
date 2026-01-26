@@ -30,15 +30,8 @@ find_package(OpenCV REQUIRED)
 message(STATUS "OpenCV encontrado en: ${OpenCV_DIR}")
 message(STATUS "OpenCV Include Dirs: ${OpenCV_INCLUDE_DIRS}")
 
-# ------------------------------------------------------------
-# 2. INCLUIR CABECERAS (¡ESTO FALTABA!)
-# ------------------------------------------------------------
-# Esta línea le dice al compilador dónde buscar 'opencv2/core.hpp'
 include_directories(${OpenCV_INCLUDE_DIRS})
 
-# ------------------------------------------------------------
-# 3. DEFINIR TU LIBRERÍA
-# ------------------------------------------------------------
 add_library(
         android_app
         SHARED
@@ -52,7 +45,6 @@ find_library(
         graphics-lib
         jnigraphics)
 
-# 4. ENLAZAR TODO
 target_link_libraries(
         android_app
         ${log-lib}
