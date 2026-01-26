@@ -23,22 +23,20 @@ using namespace std;
 const int NUM_POINTS = 1024;
 const int NUM_HARMONICS = 15;
 
+<<<<<<< HEAD
+// logica matematica
 
-// ESTRUCTURA: Descriptor de Forma
+vector<Point2f> interpolateContour(const vector<Point>& contour) {
+    int n = contour.size();
+    if (n < 3) return vector<Point2f>();
 
-struct ShapeDescriptor {
-    vector<float> features;
-    string label;
-    
-    ShapeDescriptor() {}
-    ShapeDescriptor(const vector<float>& f, const string& l) 
-        : features(f), label(l) {}
-};
-
-// PASO 1: PREPROCESAMIENTO Y EXTRACCIÓN DE CONTORNO
-
-bool extractContour(const Mat& image, vector<Point>& contour) {
-    Mat gray, binary;
+    vector<float> cumulativeLength(n);
+    cumulativeLength[0] = 0.0f;
+    for (int i = 1; i < n; i++) {
+        float dx = contour[i].x - contour[i-1].x;
+        float dy = contour[i].y - contour[i-1].y;
+        cumulativeLength[i] = cumulativeLength[i-1] + sqrt(dx*dx + dy*dy);
+    }
     
     if (image.channels() == 3 || image.channels() == 4) {
         cvtColor(image, gray, COLOR_BGR2GRAY);
@@ -82,7 +80,7 @@ bool extractContour(const Mat& image, vector<Point>& contour) {
     return true;
 }
 
-// PASO 2: INTERPOLACIÓN LINEAL A 1024 PUNTOS
+// interpolacion lineal a 1024 puntos
 
 vector<Point2f> interpolateContour(const vector<Point>& contour) {
     int n = contour.size();
@@ -117,6 +115,7 @@ vector<Point2f> interpolateContour(const vector<Point>& contour) {
             float segmentLength = cumulativeLength[idx+1] - cumulativeLength[idx];
             float t = (targetLength - cumulativeLength[idx]) / segmentLength;
             
+>>>>>>> c89b9f39f967c6e7ce3c1945fc2c7bb9c3374d56
             interpolated[i].x = (1-t) * contour[idx].x + t * contour[idx+1].x;
             interpolated[i].y = (1-t) * contour[idx].y + t * contour[idx+1].y;
         } else {
@@ -128,7 +127,7 @@ vector<Point2f> interpolateContour(const vector<Point>& contour) {
     return interpolated;
 }
 
-// PASO 3: CALCULAR CENTROIDE
+//calcular centroide
 
 Point2f calculateCentroid(const vector<Point2f>& contour) {
     float sumX = 0, sumY = 0;
@@ -144,7 +143,7 @@ Point2f calculateCentroid(const vector<Point2f>& contour) {
     return centroid;
 }
 
-// PASO 4: CONSTRUIR SEÑAL COMPLEJA
+// construir señal compleja
 
 Mat buildComplexSignal(const vector<Point2f>& contour, const Point2f& centroid) {
     int n = contour.size();
@@ -160,7 +159,7 @@ Mat buildComplexSignal(const vector<Point2f>& contour, const Point2f& centroid) 
     return complexSignal;
 }
 
-// PASO 5: FFT
+// fft
 
 void computeFFT(const Mat& complexSignal, vector<float>& magnitudes) {
     Mat dftOutput;
@@ -180,7 +179,7 @@ void computeFFT(const Mat& complexSignal, vector<float>& magnitudes) {
     LOGI("FFT calculada: %zu coeficientes", magnitudes.size());
 }
 
-// PASO 6: NORMALIZACIÓN
+// normalizar descriptor
 
 vector<float> normalizeDescriptor(const vector<float>& magnitudes) {
     if (magnitudes.size() < 2) {
@@ -210,7 +209,7 @@ vector<float> normalizeDescriptor(const vector<float>& magnitudes) {
     return descriptor;
 }
 
-// PIPELINE COMPLETO: EXTRAER DESCRIPTOR
+// pipeline completo: extraer descriptor
 
 ShapeDescriptor extractShapeDescriptor(const Mat& image) {
     LOGI("========================================");
@@ -239,7 +238,7 @@ ShapeDescriptor extractShapeDescriptor(const Mat& image) {
     return ShapeDescriptor(descriptor, "");
 }
 
-// CLASIFICACIÓN: DISTANCIA EUCLÍDEA
+// clasificación: distancia euclidiana
 
 float euclideanDistance(const vector<float>& d1, const vector<float>& d2) {
     if (d1.size() != d2.size()) {
@@ -279,7 +278,7 @@ pair<string, float> classify(const ShapeDescriptor& testDescriptor,
     return {bestLabel, minDistance};
 }
 
-// CARGAR CORPUS DESDE ASSETS
+// cargar corpus desde assets
 
 vector<ShapeDescriptor> loadCorpusFromAssets(AAssetManager* assetManager) {
     vector<ShapeDescriptor> corpus;
@@ -316,7 +315,7 @@ vector<ShapeDescriptor> loadCorpusFromAssets(AAssetManager* assetManager) {
     return corpus;
 }
 
-// CONVERSIÓN: Android Bitmap → OpenCV Mat
+// conversión: Android Bitmap → OpenCV Mat
 
 Mat bitmapToMat(JNIEnv* env, jobject bitmap) {
     AndroidBitmapInfo info;
@@ -334,7 +333,7 @@ Mat bitmapToMat(JNIEnv* env, jobject bitmap) {
     return result;
 }
 
-// TRADUCCIÓN A ESPAÑOL
+// traducción a español
 
 string translateToSpanish(const string& label) {
     if (label == "circle") return "Círculo";
@@ -343,8 +342,7 @@ string translateToSpanish(const string& label) {
     return label;
 }
 
-// JNI: FUNCIÓN DE CLASIFICACIÓN
-
+// jni: función de clasificación
 extern "C" JNIEXPORT jstring JNICALL
 Java_com_example_android_1app_MainActivity_classifyImage(
         JNIEnv* env,
